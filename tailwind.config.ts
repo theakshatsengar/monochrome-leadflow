@@ -61,6 +61,29 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Monochrome gray scale
+				gray: {
+					50: 'hsl(var(--gray-50))',
+					100: 'hsl(var(--gray-100))',
+					200: 'hsl(var(--gray-200))',
+					300: 'hsl(var(--gray-300))',
+					400: 'hsl(var(--gray-400))',
+					500: 'hsl(var(--gray-500))',
+					600: 'hsl(var(--gray-600))',
+					700: 'hsl(var(--gray-700))',
+					800: 'hsl(var(--gray-800))',
+					900: 'hsl(var(--gray-900))'
+				},
+				// Status colors - monochrome
+				status: {
+					new: 'hsl(var(--status-new))',
+					'email-sent': 'hsl(var(--status-email-sent))',
+					'followup-1': 'hsl(var(--status-followup-1))',
+					'followup-2': 'hsl(var(--status-followup-2))',
+					replied: 'hsl(var(--status-replied))',
+					booked: 'hsl(var(--status-booked))',
+					converted: 'hsl(var(--status-converted))'
 				}
 			},
 			borderRadius: {
