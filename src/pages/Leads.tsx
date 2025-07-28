@@ -1,17 +1,18 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, List } from "lucide-react";
+import { Table, List, Grid3X3 } from "lucide-react";
 import { useLeadStore } from "@/store/leadStore";
 import { Lead, LeadStatus } from "@/types/lead";
 import { LeadFilters } from "@/components/leads/LeadFilters";
 import { LeadTable } from "@/components/leads/LeadTable";
 import { KanbanView } from "@/components/leads/KanbanView";
+import { GalleryView } from "@/components/leads/GalleryView";
 import { AddLeadDialog } from "@/components/leads/AddLeadDialog";
 
 export default function Leads() {
   const { leads } = useLeadStore();
-  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
+  const [viewMode, setViewMode] = useState<"table" | "kanban" | "gallery">("table");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
   const [internFilter, setInternFilter] = useState<string | "all">("all");
@@ -77,7 +78,7 @@ export default function Leads() {
         <div className="text-sm text-muted-foreground">
           Showing {filteredLeads.length} of {leads.length} leads
         </div>
-        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "table" | "kanban")}>
+        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "table" | "kanban" | "gallery")}>
           <TabsList className="bg-muted border border-border">
             <TabsTrigger value="table" className="data-[state=active]:bg-background">
               <Table className="h-4 w-4 mr-2" />
@@ -87,14 +88,20 @@ export default function Leads() {
               <List className="h-4 w-4 mr-2" />
               Kanban
             </TabsTrigger>
+            <TabsTrigger value="gallery" className="data-[state=active]:bg-background">
+              <Grid3X3 className="h-4 w-4 mr-2" />
+              Gallery
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
       {viewMode === "table" ? (
         <LeadTable leads={filteredLeads} />
-      ) : (
+      ) : viewMode === "kanban" ? (
         <KanbanView leads={filteredLeads} />
+      ) : (
+        <GalleryView leads={filteredLeads} />
       )}
     </div>
   );
