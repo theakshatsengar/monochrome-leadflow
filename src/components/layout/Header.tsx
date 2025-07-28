@@ -1,8 +1,12 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "@/components/theme-provider";
 
 export function Header() {
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
   
   const getPageTitle = () => {
     switch (location.pathname) {
@@ -24,6 +28,20 @@ export function Header() {
       <div className="flex items-center gap-4">
         <SidebarTrigger className="h-8 w-8" />
         <h1 className="text-lg font-semibold text-foreground">{getPageTitle()}</h1>
+      </div>
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+        >
+          {theme === "light" ? (
+            <Moon className="h-4 w-4" />
+          ) : (
+            <Sun className="h-4 w-4" />
+          )}
+        </Button>
+        <span className="text-sm text-muted-foreground">Welcome back, Admin</span>
       </div>
     </header>
   );

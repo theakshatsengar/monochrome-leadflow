@@ -49,26 +49,34 @@ export function AddLeadDialog() {
       return;
     }
 
-    addLead({
-      ...formData,
-      linkedinProfile: formData.linkedinProfile || undefined,
-    });
+    try {
+      addLead({
+        ...formData,
+        linkedinProfile: formData.linkedinProfile || undefined,
+      });
 
-    toast({
-      title: "Lead added successfully",
-      description: `${formData.companyName} has been added to your leads.`,
-    });
+      toast({
+        title: "Lead added successfully",
+        description: `${formData.companyName} has been added to your leads.`,
+      });
 
-    setFormData({
-      companyName: "",
-      website: "",
-      contactPersonName: "",
-      contactEmail: "",
-      linkedinProfile: "",
-      assignedIntern: "",
-      status: "new",
-    });
-    setOpen(false);
+      setFormData({
+        companyName: "",
+        website: "",
+        contactPersonName: "",
+        contactEmail: "",
+        linkedinProfile: "",
+        assignedIntern: "",
+        status: "new",
+      });
+      setOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error adding lead",
+        description: error instanceof Error ? error.message : "Failed to add lead",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

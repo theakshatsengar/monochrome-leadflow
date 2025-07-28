@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { Lead, LeadStatus } from '@/types/lead';
 
 interface LeadStore {
@@ -80,23 +81,36 @@ const mockLeads: Lead[] = [
   },
 ];
 
-export const useLeadStore = create<LeadStore>((set) => ({
-  leads: mockLeads,
-  
-  addLead: (leadData) =>
-    set((state) => ({
-      leads: [
-        ...state.leads,
-        {
-          ...leadData,
-          id: Date.now().toString(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          followupsSent: 0,
-          hasReplies: false,
-        },
-      ],
-    })),
+export const useLeadStore = create<LeadStore>()(
+  persist(
+    (set, get) => ({
+      leads: mockLeads,
+      
+      addLead: (leadData) =>
+        set((state) => {
+          // Check for duplicates by email
+          const existingLead = state.leads.find(
+            lead => lead.contactEmail.toLowerCase() === leadData.contactEmail.toLowerCase()
+          );
+          
+          if (existingLead) {
+            throw new Error('A lead with this email already exists');
+          }
+          
+          return {
+            leads: [
+              ...state.leads,
+              {
+                ...leadData,
+                id: Date.now().toString(),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                followupsSent: 0,
+                hasReplies: false,
+              },
+            ],
+          };
+        }),
 
   updateLeadStatus: (id, status) =>
     set((state) => ({
@@ -112,12 +126,18 @@ export const useLeadStore = create<LeadStore>((set) => ({
       leads: state.leads.filter((lead) => lead.id !== id),
     })),
 
-  updateLead: (id, updates) =>
-    set((state) => ({
-      leads: state.leads.map((lead) =>
-        lead.id === id
-          ? { ...lead, ...updates, updatedAt: new Date() }
-          : lead
-      ),
-    })),
-}));
+      updateLead: (id, updates) =>
+        set((state) => ({
+          leads: state.leads.map((lead) =>
+            lead.id === id
+              ? { ...lead, ...updates, updatedAt: new Date() }
+              : lead
+          ),
+        })),
+    }),
+    {
+      name: 'lead-storage',
+      partialize: (state) => ({ leads: state.leads }),
+    }
+  )
+);
