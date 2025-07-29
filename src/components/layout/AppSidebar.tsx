@@ -5,9 +5,25 @@ import {
   BarChart3, 
   Settings,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  CheckSquare,
+  UserCheck,
+  LogOut,
+  User,
+  FlaskConical
 } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/store/authStore";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import {
   Sidebar,
@@ -21,18 +37,55 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const items = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Leads", url: "/leads", icon: Users },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "Settings", url: "/settings", icon: Settings },
-];
+// Define navigation items with role-based access
+const getNavigationItems = (userRole: string | undefined) => {
+  if (userRole === 'intern') {
+    return [
+      { title: "Dashboard", url: "/", icon: UserCheck, roles: ['intern'] },
+      { title: "Leads", url: "/leads", icon: Users, roles: ['intern'] },
+    ];
+  }
+
+  const baseItems = [
+    { title: "Dashboard", url: "/", icon: LayoutDashboard, roles: ['admin', 'manager'] },
+    { title: "Leads", url: "/leads", icon: Users, roles: ['admin', 'manager', 'intern'] },
+  ];
+
+  const roleSpecificItems = [
+    // Manager/Admin items
+    { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ['admin', 'manager'] },
+    { title: "Task Management", url: "/todo-management", icon: CheckSquare, roles: ['admin', 'manager'] },
+    
+    // Admin-only items
+    { title: "Settings", url: "/settings", icon: Settings, roles: ['admin'] },
+  ];
+
+  const allItems = [...baseItems, ...roleSpecificItems];
+  
+  if (!userRole) return baseItems;
+  
+  return allItems.filter(item => item.roles.includes(userRole));
+};
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
+
+  // Get navigation items based on user role
+  const items = getNavigationItems(user?.role);
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const isActive = (path: string) => {
     if (path === "/" && currentPath === "/") return true;
@@ -47,15 +100,15 @@ export function AppSidebar() {
 
   return (
     <Sidebar
-      className={`${collapsed ? "w-14" : "w-60"} border-r border-border bg-background`}
+      className={`${collapsed ? "w-20" : "w-60"} border-r border-border bg-background`}
       collapsible="icon"
     >
       <SidebarContent>
         {/* Logo/Brand */}
         <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 bg-primary rounded flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">L</span>
+          <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
+            <div className="h-8 w-8 bg-primary rounded flex items-center justify-center flex-shrink-0">
+              <FlaskConical className="h-4 w-4 text-primary-foreground" />
             </div>
             {!collapsed && (
               <span className="font-semibold text-foreground">LeadFlow</span>
@@ -84,6 +137,78 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Profile Section at Bottom */}
+        {user && (
+          <div className="mt-auto border-t border-border p-4">
+            {collapsed ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="w-full p-2 h-auto">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                        {getInitials(user.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-start p-2 h-auto">
+                    <div className="flex items-center gap-3 w-full">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                          {getInitials(user.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 text-left">
+                        <p className="text-sm font-medium text-foreground truncate">{user.name}</p>
+                      </div>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        )}
       </SidebarContent>
     </Sidebar>
   );

@@ -8,7 +8,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Pure monochrome design system - only black, white, and grays */
+    /* Enhanced monochrome design with minimal accent colors */
     --background: 0 0% 100%;
     --foreground: 0 0% 0%;
 
@@ -18,7 +18,8 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 0%;
 
-    --primary: 0 0% 0%;
+    /* Subtle blue accent for primary actions */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 96%;
@@ -27,15 +28,17 @@ All colors MUST be HSL.
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 45%;
 
-    --accent: 0 0% 96%;
+    /* Soft accent with slight blue tint */
+    --accent: 220 14% 96%;
     --accent-foreground: 0 0% 0%;
 
-    --destructive: 0 0% 0%;
+    /* Warning/destructive with subtle red tint */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 90%;
     --input: 0 0% 95%;
-    --ring: 0 0% 0%;
+    --ring: 217 91% 60%;
 
     /* Additional monochrome tokens */
     --gray-50: 0 0% 98%;
@@ -49,70 +52,91 @@ All colors MUST be HSL.
     --gray-800: 0 0% 15%;
     --gray-900: 0 0% 9%;
 
-    /* Status colors - monochrome variants */
-    --status-new: 0 0% 70%;
-    --status-email-sent: 0 0% 40%;
-    --status-followup-1: 0 0% 60%;
-    --status-followup-2: 0 0% 50%;
-    --status-replied: 0 0% 20%;
-    --status-booked: 0 0% 30%;
-    --status-converted: 0 0% 10%;
+    /* Status colors with subtle color hints */
+    --status-new: 60 15% 75%;         /* Warm gray */
+    --status-email-sent: 217 25% 85%; /* Cool blue-gray */
+    --status-followup-1: 45 20% 78%;  /* Warm gold-gray */
+    --status-followup-2: 30 18% 80%;  /* Amber-gray */
+    --status-replied: 150 20% 82%;    /* Cool green-gray */
+    --status-booked: 200 25% 85%;     /* Blue-gray */
+    --status-converted: 120 30% 88%;  /* Green-gray */
 
     --radius: 0.5rem;
 
+    /* Sidebar with enhanced styling */
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
+    --sidebar-accent: 220 14% 95%;
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 217 91% 60%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Enhanced dark theme with minimal accent colors */
+    --background: 0 0% 9%;
+    --foreground: 0 0% 98%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    /* Subtle blue accent for primary actions */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 70%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    /* Soft accent with slight blue tint */
+    --accent: 220 13% 18%;
+    --accent-foreground: 0 0% 95%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    /* Warning/destructive with subtle red tint */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 0 0% 18%;
+    --input: 0 0% 12%;
+    --ring: 217 91% 60%;
+
+    /* Sidebar with subtle distinction */
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 220 13% 16%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 16%;
+    --sidebar-ring: 217 91% 60%;
+
+    /* Refined gray scale */
+    --gray-50: 0 0% 9%;
+    --gray-100: 0 0% 12%;
+    --gray-200: 0 0% 16%;
+    --gray-300: 0 0% 22%;
+    --gray-400: 0 0% 35%;
+    --gray-500: 0 0% 50%;
+    --gray-600: 0 0% 65%;
+    --gray-700: 0 0% 78%;
+    --gray-800: 0 0% 88%;
+    --gray-900: 0 0% 95%;
+
+    /* Status colors with improved contrast and subtle hues */
+    --status-new: 60 7% 63%;          /* Warm gray */
+    --status-email-sent: 217 19% 70%; /* Cool blue-gray */
+    --status-followup-1: 45 15% 65%;  /* Warm gold-gray */
+    --status-followup-2: 30 12% 68%;  /* Amber-gray */
+    --status-replied: 150 15% 72%;    /* Cool green-gray */
+    --status-booked: 200 20% 75%;     /* Blue-gray */
+    --status-converted: 120 25% 78%;  /* Green-gray */
   }
 }
 
@@ -123,5 +147,15 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Hide scrollbar but keep scrolling functionality */
+  .hide-scrollbar {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
   }
 }

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Mail, Linkedin, Edit, Trash2, MoreHorizontal } from "lucide-react";
+import { Mail, Linkedin, Edit, Trash2, MoreHorizontal, ExternalLink } from "lucide-react";
 import { useLeadStore } from "@/store/leadStore";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -99,14 +99,38 @@ export function GalleryView({ leads }: GalleryViewProps) {
               </p>
               
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail className="h-3 w-3" />
-                <span className="truncate">{lead.contactEmail}</span>
+                <Mail className="h-3 w-3 flex-shrink-0" />
+                <a 
+                  href={`mailto:${lead.contactEmail}`}
+                  className="truncate hover:text-primary transition-colors"
+                >
+                  {lead.contactEmail}
+                </a>
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                <a 
+                  href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="truncate hover:text-primary transition-colors"
+                >
+                  {lead.website}
+                </a>
               </div>
               
               {lead.linkedinProfile && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Linkedin className="h-3 w-3" />
-                  <span className="truncate">LinkedIn</span>
+                  <Linkedin className="h-3 w-3 flex-shrink-0" />
+                  <a 
+                    href={lead.linkedinProfile}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="truncate hover:text-primary transition-colors"
+                  >
+                    LinkedIn Profile
+                  </a>
                 </div>
               )}
             </div>

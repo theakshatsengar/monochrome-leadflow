@@ -41,7 +41,6 @@ export function Header() {
             <Sun className="h-4 w-4" />
           )}
         </Button>
-        <span className="text-sm text-muted-foreground">Welcome back, Admin</span>
       </div>
     </header>
   );

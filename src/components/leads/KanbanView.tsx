@@ -1,4 +1,4 @@
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter, useDroppable, pointerWithin } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -34,11 +34,18 @@ function KanbanCard({ lead }: KanbanCardProps) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: lead.id });
+  } = useSortable({ 
+    id: lead.id,
+    data: {
+      type: 'lead',
+      lead: lead
+    }
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    zIndex: isDragging ? 1000 : 'auto',
   };
 
   const handleDelete = () => {
@@ -152,21 +159,43 @@ interface KanbanColumnProps {
 }
 
 function KanbanColumn({ status, title, leads }: KanbanColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: status,
+    data: {
+      type: 'column',
+      status: status
+    }
+  });
+
+  console.log(`Column ${status} - isOver:`, isOver);
+
   return (
-    <div className="flex flex-col bg-muted/50 rounded-lg p-3 min-h-[500px] w-80">
-      <div className="flex items-center justify-between mb-3">
+    <div className={`flex flex-col bg-muted/50 rounded-lg p-3 h-full w-80 min-w-80 transition-all duration-200 ${
+      isOver ? 'bg-accent/30 border-2 border-primary border-dashed scale-[1.02]' : 'border-2 border-transparent'
+    }`}>
+      <div className="flex items-center justify-between mb-3 flex-shrink-0">
         <h3 className="font-medium text-foreground">{title}</h3>
         <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
           {leads.length}
         </Badge>
       </div>
-      <SortableContext items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
-        <div className="flex-1">
+      <div 
+        ref={setNodeRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden min-h-32 relative hide-scrollbar"
+      >
+        <SortableContext items={leads.map(lead => lead.id)} strategy={verticalListSortingStrategy}>
           {leads.map((lead) => (
             <KanbanCard key={lead.id} lead={lead} />
           ))}
-        </div>
-      </SortableContext>
+          {leads.length === 0 && (
+            <div className="text-center text-muted-foreground text-sm py-8 border-2 border-dashed border-muted-foreground/30 rounded-lg">
+              {isOver ? 'Drop here!' : 'Drop leads here'}
+            </div>
+          )}
+        </SortableContext>
+        {/* Invisible overlay to catch drops anywhere in the column */}
+        <div className="absolute inset-0 pointer-events-none" />
+      </div>
     </div>
   );
 }
@@ -183,6 +212,7 @@ export function KanbanView({ leads }: KanbanViewProps) {
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
+    console.log('Drag started:', active.id);
     setActiveId(active.id as string);
     const lead = leads.find(l => l.id === active.id);
     setDraggedLead(lead || null);
@@ -191,17 +221,67 @@ export function KanbanView({ leads }: KanbanViewProps) {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
+    console.log('🎯 DRAG END EVENT:', {
+      activeId: active.id,
+      overId: over?.id,
+      overData: over?.data,
+      activeData: active.data
+    });
+
     if (!over) {
+      console.log('❌ No drop target found');
       setActiveId(null);
       setDraggedLead(null);
       return;
     }
 
     const leadId = active.id as string;
-    const newStatus = over.id as LeadStatus;
+    let newStatus: string;
 
-    if (LEAD_STATUSES.some(s => s.value === newStatus)) {
-      updateLeadStatus(leadId, newStatus);
+    // If dropping over another lead card, get the column status from that lead
+    if (over.data.current?.type === 'lead') {
+      const targetLead = over.data.current.lead as Lead;
+      newStatus = targetLead.status;
+      console.log('🎯 Dropping over lead card, using column status:', newStatus);
+    } else {
+      // Dropping over column directly
+      newStatus = over.id as string;
+      console.log('🎯 Dropping over column:', newStatus);
+    }
+    
+    console.log('🔄 Processing status change:', {
+      leadId,
+      newStatus,
+      validStatuses: ['new', 'email-sent', 'followup-1', 'followup-2', 'replied', 'booked', 'converted']
+    });
+
+    // Check if the drop target is a valid status column
+    const validStatuses = ['new', 'email-sent', 'followup-1', 'followup-2', 'replied', 'booked', 'converted'];
+    if (!validStatuses.includes(newStatus)) {
+      console.log('❌ Invalid status:', newStatus);
+      setActiveId(null);
+      setDraggedLead(null);
+      return;
+    }
+
+    // Find the lead to get its current status
+    const currentLead = leads.find(lead => lead.id === leadId);
+    if (!currentLead) {
+      console.log('❌ Lead not found:', leadId);
+      setActiveId(null);
+      setDraggedLead(null);
+      return;
+    }
+
+    console.log('📊 Current lead status:', currentLead.status, '-> New status:', newStatus);
+
+    // Only update if the status actually changed
+    if (currentLead.status !== newStatus) {
+      console.log('✅ Updating lead status...');
+      updateLeadStatus(leadId, newStatus as LeadStatus);
+      console.log('✅ Status updated successfully');
+    } else {
+      console.log('ℹ️ Status unchanged, no update needed');
     }
 
     setActiveId(null);
@@ -210,19 +290,18 @@ export function KanbanView({ leads }: KanbanViewProps) {
 
   return (
     <DndContext
-      collisionDetection={closestCorners}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-4 h-full min-w-fit">
         {LEAD_STATUSES.map((status) => (
-          <div key={status.value} id={status.value}>
-            <KanbanColumn
-              status={status.value}
-              title={status.label}
-              leads={statusGroups[status.value] || []}
-            />
-          </div>
+          <KanbanColumn
+            key={status.value}
+            status={status.value}
+            title={status.label}
+            leads={statusGroups[status.value] || []}
+          />
         ))}
       </div>
       

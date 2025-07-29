@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, List, Grid3X3 } from "lucide-react";
@@ -12,11 +13,20 @@ import { AddLeadDialog } from "@/components/leads/AddLeadDialog";
 
 export default function Leads() {
   const { leads } = useLeadStore();
+  const [searchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<"table" | "kanban" | "gallery">("table");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
   const [internFilter, setInternFilter] = useState<string | "all">("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
+
+  // Handle status filter from URL params
+  useEffect(() => {
+    const statusParam = searchParams.get('status');
+    if (statusParam && (statusParam === 'new' || statusParam === 'contacted' || statusParam === 'qualified' || statusParam === 'proposal' || statusParam === 'won' || statusParam === 'lost')) {
+      setStatusFilter(statusParam as LeadStatus);
+    }
+  }, [searchParams]);
 
   const filteredLeads = useMemo(() => {
     let filtered = leads;
@@ -52,57 +62,71 @@ export default function Leads() {
   }, [leads, searchQuery, statusFilter, internFilter, dateFilter]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Lead Management</h1>
-          <p className="text-muted-foreground">
-            Manage and track your outbound leads
-          </p>
+    <div className="flex flex-col h-full max-w-full overflow-hidden">
+      {/* Fixed header section */}
+      <div className="flex-shrink-0 space-y-6 max-w-full">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Lead Management</h1>
+            <p className="text-muted-foreground">
+              Manage and track your outbound leads
+            </p>
+          </div>
+          <AddLeadDialog />
         </div>
-        <AddLeadDialog />
+
+        <LeadFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          internFilter={internFilter}
+          onInternFilterChange={setInternFilter}
+          dateFilter={dateFilter}
+          onDateFilterChange={setDateFilter}
+        />
+
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Showing {filteredLeads.length} of {leads.length} leads
+          </div>
+          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "table" | "kanban" | "gallery")}>
+            <TabsList className="bg-muted border border-border">
+              <TabsTrigger value="table" className="data-[state=active]:bg-background">
+                <Table className="h-4 w-4 mr-2" />
+                Table
+              </TabsTrigger>
+              <TabsTrigger value="kanban" className="data-[state=active]:bg-background">
+                <List className="h-4 w-4 mr-2" />
+                Kanban
+              </TabsTrigger>
+              <TabsTrigger value="gallery" className="data-[state=active]:bg-background">
+                <Grid3X3 className="h-4 w-4 mr-2" />
+                Gallery
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
-      <LeadFilters
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        internFilter={internFilter}
-        onInternFilterChange={setInternFilter}
-        dateFilter={dateFilter}
-        onDateFilterChange={setDateFilter}
-      />
-
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Showing {filteredLeads.length} of {leads.length} leads
-        </div>
-        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "table" | "kanban" | "gallery")}>
-          <TabsList className="bg-muted border border-border">
-            <TabsTrigger value="table" className="data-[state=active]:bg-background">
-              <Table className="h-4 w-4 mr-2" />
-              Table
-            </TabsTrigger>
-            <TabsTrigger value="kanban" className="data-[state=active]:bg-background">
-              <List className="h-4 w-4 mr-2" />
-              Kanban
-            </TabsTrigger>
-            <TabsTrigger value="gallery" className="data-[state=active]:bg-background">
-              <Grid3X3 className="h-4 w-4 mr-2" />
-              Gallery
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      {/* Scrollable content area */}
+      <div className="flex-1 min-h-0 mt-6 max-w-full overflow-hidden">
+        {viewMode === "table" ? (
+          <div className="overflow-auto h-full">
+            <LeadTable leads={filteredLeads} />
+          </div>
+        ) : viewMode === "kanban" ? (
+          <div className="h-full w-full max-w-full overflow-hidden bg-background border border-border rounded-lg">
+            <div className="h-full w-full max-w-full overflow-x-auto overflow-y-hidden p-4 hide-scrollbar">
+              <KanbanView leads={filteredLeads} />
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-auto h-full">
+            <GalleryView leads={filteredLeads} />
+          </div>
+        )}
       </div>
-
-      {viewMode === "table" ? (
-        <LeadTable leads={filteredLeads} />
-      ) : viewMode === "kanban" ? (
-        <KanbanView leads={filteredLeads} />
-      ) : (
-        <GalleryView leads={filteredLeads} />
-      )}
     </div>
   );
 }
