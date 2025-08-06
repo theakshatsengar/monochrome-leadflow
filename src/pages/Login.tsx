@@ -13,7 +13,7 @@ export function Login() {
   const navigate = useNavigate();
   const { login, isLoading } = useAuthStore();
   const [credentials, setCredentials] = useState<LoginCredentials>({
-    email: '',
+    identifier: '',
     password: ''
   });
   const [error, setError] = useState<string>('');
@@ -22,7 +22,7 @@ export function Login() {
     e.preventDefault();
     setError('');
 
-    if (!credentials.email || !credentials.password) {
+    if (!credentials.identifier || !credentials.password) {
       setError('Please fill in all fields');
       return;
     }
@@ -31,15 +31,7 @@ export function Login() {
     if (success) {
       navigate('/');
     } else {
-      setError('Invalid email or password');
-    }
-  };
-
-  const handleDemoLogin = async (email: string, password: string) => {
-    setCredentials({ email, password });
-    const success = await login({ email, password });
-    if (success) {
-      navigate('/');
+      setError('Invalid email/name or password');
     }
   };
 
@@ -66,15 +58,15 @@ export function Login() {
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-foreground">Email</Label>
+                <Label htmlFor="identifier" className="text-foreground">Email or Name</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={credentials.email}
-                    onChange={(e) => setCredentials(prev => ({ ...prev, email: e.target.value }))}
+                    id="identifier"
+                    type="text"
+                    placeholder="Enter your email or name"
+                    value={credentials.identifier}
+                    onChange={(e) => setCredentials(prev => ({ ...prev, identifier: e.target.value }))}
                     className="pl-10 bg-input border-border text-foreground"
                     disabled={isLoading}
                   />
@@ -118,68 +110,6 @@ export function Login() {
                 )}
               </Button>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Demo Accounts */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-lg text-foreground">Demo Accounts</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Click any role below to sign in with demo credentials
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button
-              variant="outline"
-              className="w-full justify-start bg-background border-border text-foreground hover:bg-accent"
-              onClick={() => handleDemoLogin('admin@leadflow.com', 'admin123')}
-              disabled={isLoading}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
-                  <User className="h-4 w-4 text-red-600 dark:text-red-400" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium">Admin User</p>
-                  <p className="text-sm text-muted-foreground">admin@leadflow.com</p>
-                </div>
-              </div>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full justify-start bg-background border-border text-foreground hover:bg-accent"
-              onClick={() => handleDemoLogin('manager@leadflow.com', 'manager123')}
-              disabled={isLoading}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
-                  <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium">Manager User</p>
-                  <p className="text-sm text-muted-foreground">manager@leadflow.com</p>
-                </div>
-              </div>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full justify-start bg-background border-border text-foreground hover:bg-accent"
-              onClick={() => handleDemoLogin('intern@leadflow.com', 'intern123')}
-              disabled={isLoading}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                  <User className="h-4 w-4 text-green-600 dark:text-green-400" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium">Intern User</p>
-                  <p className="text-sm text-muted-foreground">intern@leadflow.com</p>
-                </div>
-              </div>
-            </Button>
           </CardContent>
         </Card>
 

@@ -23,7 +23,7 @@ export const useAuthStore = create<AuthStore>()(
         
         // Find user in mock data
         const foundUser = MOCK_USERS.find(
-          u => u.email === credentials.email && u.password === credentials.password
+          u => u.identifier === credentials.identifier && u.password === credentials.password
         );
         
         if (foundUser) {

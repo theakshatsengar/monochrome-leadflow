@@ -15,40 +15,72 @@ export interface AuthState {
 }
 
 export interface LoginCredentials {
-  email: string;
+  identifier: string; // Can be email or name
   password: string;
 }
 
 // Mock users for demonstration
 export const MOCK_USERS: (LoginCredentials & { user: User })[] = [
+  // Login by email
   {
-    email: 'admin@leadflow.com',
-    password: 'admin123',
+    identifier: 'bhavyaojha28@gmail.com',
+    password: 'garlicbread',
     user: {
       id: '1',
-      name: 'Admin User',
-      email: 'admin@leadflow.com',
+      name: 'Bhavya',
+      email: 'bhavyaojha28@gmail.com',
+      role: 'intern'
+    }
+  },
+  {
+    identifier: 'bhumikabisht603@gmail.com',
+    password: 'pancake',
+    user: {
+      id: '2',
+      name: 'Bhumika',
+      email: 'bhumikabisht603@gmail.com',
+      role: 'intern'
+    }
+  },
+  {
+    identifier: 'akshatsengar1002@gmail.com',
+    password: 'eggcurry',
+    user: {
+      id: '3',
+      name: 'Akshat',
+      email: 'akshatsengar1002@gmail.com',
       role: 'admin'
     }
   },
+  // Login by name
   {
-    email: 'manager@leadflow.com',
-    password: 'manager123',
+    identifier: 'Bhavya',
+    password: 'garlicbread',
     user: {
-      id: '2',
-      name: 'Manager User',
-      email: 'manager@leadflow.com',
-      role: 'manager'
+      id: '1',
+      name: 'Bhavya',
+      email: 'bhavyaojha28@gmail.com',
+      role: 'intern'
     }
   },
   {
-    email: 'intern@leadflow.com',
-    password: 'intern123',
+    identifier: 'Bhumika',
+    password: 'pancake',
+    user: {
+      id: '2',
+      name: 'Bhumika',
+      email: 'bhumikabisht603@gmail.com',
+      role: 'intern'
+    }
+  },
+  {
+    identifier: 'Akshat',
+    password: 'eggcurry',
     user: {
       id: '3',
-      name: 'Intern User',
-      email: 'intern@leadflow.com',
-      role: 'intern'
+      name: 'Akshat',
+      email: 'akshatsengar1002@gmail.com',
+      role: 'admin'
     }
   }
 ];
