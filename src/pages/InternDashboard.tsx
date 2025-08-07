@@ -33,19 +33,18 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useLeadStore } from '@/store/leadStore';
-import { useTodoStore } from '@/store/todoStore';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigate } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
-import { TodoTask } from '@/types/todo';
 import { LEAD_STATUSES, INTERNS, LeadStatus } from "@/types/lead";
 import { toast } from "@/hooks/use-toast";
+import { DailyTasksSection } from '@/components/DailyTasksSection';
+import { useDailyTasksStore } from '@/store/dailyTasksStore';
 
 export function InternDashboard() {
   const navigate = useNavigate();
-  const { leads, addLead } = useLeadStore();
-  const { getTasksForIntern, toggleTaskComplete } = useTodoStore();
+  const { leads, addLead, fetchLeads, subscribeToLeads, isLoading, error } = useLeadStore();
   const { user } = useAuthStore();
+  const { tasks } = useDailyTasksStore();
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [formData, setFormData] = useState({
     companyName: "",
@@ -53,40 +52,22 @@ export function InternDashboard() {
     contactPersonName: "",
     contactEmail: "",
     linkedinProfile: "",
-    assignedIntern: "",
     status: "new" as LeadStatus,
   });
   
-  // Get tasks for current intern
-  const tasks = getTasksForIntern(user?.name || 'all');
-  
-  const toggleTask = (taskId: string) => {
-    toggleTaskComplete(taskId, user?.name);
-  };
-
-  const completedTasks = tasks.filter(task => task.completed).length;
-  const totalTasks = tasks.length;
-
-  // Priority colors
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800';
-      case 'medium':
-        return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800';
-      case 'low':
-        return 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800';
-      default:
-        return 'bg-gray-100 dark:bg-gray-900/20 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800';
+  // Fetch data on mount and set up real-time subscription
+  useEffect(() => {
+    if (user) {
+      fetchLeads(user.id, user.role);
+      
+      // Set up real-time subscription
+      const unsubscribe = subscribeToLeads(user.id, user.role);
+      
+      // Cleanup subscription on unmount
+      return unsubscribe;
     }
-  };
-
-  // Check if task is overdue
-  const isOverdue = (task: TodoTask) => {
-    if (!task.dueDate || task.completed) return false;
-    return new Date(task.dueDate) < new Date();
-  };
-
+  }, [user, fetchLeads, subscribeToLeads]);
+  
   // Calculate action card metrics
   const leadsToEmail = leads.filter(lead => lead.status === 'new').length;
   const followupsDue = leads.filter(lead => 
@@ -96,24 +77,66 @@ export function InternDashboard() {
     lead.status === 'replied' || (lead.hasReplies && lead.status !== 'booked')
   ).length;
 
-  // Mock stats for today
-  const todayStats = {
-    leadsAdded: 5,
-    emailsSent: 12,
-    replies: 3,
-    callsBooked: 1
+  // Calculate realtime stats for today based on actual data
+  const getTodayStats = () => {
+    if (!user) return { leadsAdded: 0, emailsSent: 0, replies: 0, callsBooked: 0 };
+    
+    const today = new Date().toDateString();
+    
+    // Get leads added today (filter by created_at if available, otherwise use current count)
+    const todayLeads = leads.filter(lead => {
+      if (lead.created_at) {
+        return new Date(lead.created_at).toDateString() === today;
+      }
+      return false;
+    });
+
+    // Get task progress from daily tasks store for current user
+    const userTasks = tasks.filter(task => task.userId === user.id);
+    const submitLeadsTask = userTasks.find(task => task.id === 'submit-leads');
+    const sendEmailsTask = userTasks.find(task => task.id === 'send-emails');
+    const followUpTask = userTasks.find(task => task.id === 'follow-up');
+    
+    // Calculate calls booked today
+    const callsBooked = leads.filter(lead => {
+      if (lead.status === 'booked' && lead.updated_at) {
+        return new Date(lead.updated_at).toDateString() === today;
+      }
+      return false;
+    }).length;
+
+    return {
+      leadsAdded: submitLeadsTask?.currentCount || todayLeads.length,
+      emailsSent: sendEmailsTask?.currentCount || 0,
+      replies: leads.filter(lead => lead.status === 'replied' && lead.updated_at && 
+        new Date(lead.updated_at).toDateString() === today).length,
+      callsBooked: callsBooked
+    };
   };
+
+  const todayStats = getTodayStats();
 
   // Handle navigation to leads page with status filter
   const handleSendEmailsClick = () => {
+    if (!user) return;
+    // Track email sending activity
+    const { incrementTaskProgress } = useDailyTasksStore.getState();
+    incrementTaskProgress('send-emails', user.id);
     navigate('/leads?status=new');
   };
 
+  // Track follow-up activity
+  const handleFollowUpClick = () => {
+    if (!user) return;
+    const { incrementTaskProgress } = useDailyTasksStore.getState();
+    incrementTaskProgress('follow-up', user.id);
+  };
+
   // Handle form submission for add lead
-  const handleAddLeadSubmit = (e: React.FormEvent) => {
+  const handleAddLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.companyName || !formData.contactPersonName || !formData.contactEmail || !formData.assignedIntern) {
+    if (!formData.companyName || !formData.contactPersonName || !formData.contactEmail) {
       toast({
         title: "Missing required fields",
         description: "Please fill in all required fields.",
@@ -122,11 +145,20 @@ export function InternDashboard() {
       return;
     }
 
+    if (!user) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to add leads.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      addLead({
+      await addLead({
         ...formData,
         linkedinProfile: formData.linkedinProfile || undefined,
-      });
+      }, user.id);
 
       toast({
         title: "Lead added successfully",
@@ -139,7 +171,6 @@ export function InternDashboard() {
         contactPersonName: "",
         contactEmail: "",
         linkedinProfile: "",
-        assignedIntern: "",
         status: "new",
       });
       setAddLeadOpen(false);
@@ -153,141 +184,41 @@ export function InternDashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-4">
       {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold text-foreground">Intern Dashboard</h1>
-        <p className="text-muted-foreground">
-          Stay organized and track your daily activities
-        </p>
+      <div>
+        <h1 className="text-xl font-semibold">Intern Dashboard</h1>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Daily Checklist - Left Column */}
+      <div className="grid lg:grid-cols-3 gap-4">
+        {/* Daily Tasks - Left Column */}
         <div className="lg:col-span-1">
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-foreground">
-                  <CheckCircle className="h-5 w-5 text-primary" />
-                  Today's Tasks
-                </CardTitle>
-                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                  {completedTasks}/{totalTasks}
-                </Badge>
-              </div>
-              <CardDescription className="text-muted-foreground">
-                Complete your daily checklist to stay on track
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {tasks.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No tasks assigned yet</p>
-                  <p className="text-xs">Check back later for new assignments</p>
-                </div>
-              ) : (
-                tasks.map((task) => (
-                  <div 
-                    key={task.id} 
-                    className={`flex items-start gap-3 p-3 rounded-lg transition-colors border ${
-                      isOverdue(task) 
-                        ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800' 
-                        : 'hover:bg-accent/50 border-transparent'
-                    }`}
-                  >
-                    <Checkbox
-                      id={task.id}
-                      checked={task.completed}
-                      onCheckedChange={() => toggleTask(task.id)}
-                      className="mt-0.5"
-                    />
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <label 
-                          htmlFor={task.id}
-                          className={`block text-sm font-medium cursor-pointer transition-colors ${
-                            task.completed 
-                              ? 'text-muted-foreground line-through' 
-                              : 'text-foreground'
-                          }`}
-                        >
-                          {task.title}
-                        </label>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <Badge variant="outline" className={`text-xs ${getPriorityColor(task.priority)}`}>
-                            {task.priority}
-                          </Badge>
-                          {isOverdue(task) && (
-                            <AlertCircle className="h-4 w-4 text-red-500" />
-                          )}
-                        </div>
-                      </div>
-                      
-                      {task.description && (
-                        <p className={`text-xs transition-colors ${
-                          task.completed 
-                            ? 'text-muted-foreground/70' 
-                            : 'text-muted-foreground'
-                        }`}>
-                          {task.description}
-                        </p>
-                      )}
-                      
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>
-                          {task.assignedTo === 'all' ? 'All interns' : `Assigned to you`}
-                        </span>
-                        {task.dueDate && (
-                          <span className={isOverdue(task) ? 'text-red-500 font-medium' : ''}>
-                            Due {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-              
-              {completedTasks === totalTasks && totalTasks > 0 && (
-                <div className="mt-4 p-3 bg-accent border border-border rounded-lg">
-                  <p className="text-sm text-foreground font-medium">
-                    🎉 All tasks completed! Great job today!
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {user && <DailyTasksSection userId={user.id} />}
         </div>
 
         {/* Right Column */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4">
           {/* Quick Actions Section */}
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-foreground">
-                <Target className="h-5 w-5 text-primary" />
-                Quick Actions
-              </CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Jump to common tasks
-              </CardDescription>
+          <Card className="border-none shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-medium">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-3">
               <div className="grid md:grid-cols-3 gap-3">
                 <Button 
                   onClick={() => setAddLeadOpen(true)}
                   variant="outline"
-                  className="justify-start"
+                  size="sm"
+                  className="justify-start h-14 border-2 hover:bg-accent/50"
                 >
                   <Users className="w-4 h-4 mr-2" />
-                  Add New Lead
+                  Add Lead
                 </Button>
                 <Button 
                   onClick={handleSendEmailsClick}
                   variant="outline"
-                  className="justify-start"
+                  size="sm"
+                  className="justify-start h-14 border-2 hover:bg-accent/50"
                 >
                   <Mail className="w-4 h-4 mr-2" />
                   Send Emails
@@ -295,10 +226,11 @@ export function InternDashboard() {
                 <Button 
                   onClick={() => navigate('/leads')}
                   variant="outline"
-                  className="justify-start"
+                  size="sm"
+                  className="justify-start h-14 border-2 hover:bg-accent/50"
                 >
                   <BarChart3 className="w-4 h-4 mr-2" />
-                  View All Leads
+                  View Leads
                 </Button>
               </div>
             </CardContent>
@@ -306,123 +238,99 @@ export function InternDashboard() {
 
           {/* Action Cards Grid */}
           <div className="grid md:grid-cols-2 gap-4">
-            {/* Leads Needing Email */}
-            <Card className="bg-card border-border hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-accent rounded-lg">
-                    <Mail className="h-4 w-4 text-foreground" />
+            {/* Action Cards Column */}
+            <div className="space-y-3">
+              {/* Leads Needing Email */}
+              <Card className="border-none shadow-sm cursor-pointer hover:bg-accent/30 transition-colors" onClick={handleSendEmailsClick}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">To Email</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {leadsToEmail}
+                    </Badge>
                   </div>
-                  <CardTitle className="text-lg text-foreground">Leads to Email</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-foreground">{leadsToEmail}</span>
-                  <span className="text-sm text-muted-foreground">new leads waiting</span>
-                </div>
-                <Button 
-                  onClick={() => navigate('/leads')}
-                  className="w-full"
-                  size="sm"
-                >
-                  <Mail className="w-4 h-4 mr-2" />
-                  View Leads
-                </Button>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Follow-ups Due */}
-            <Card className="bg-card border-border hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-accent rounded-lg">
-                    <Clock className="h-4 w-4 text-foreground" />
+              {/* Follow-ups Due */}
+              <Card className="border-none shadow-sm cursor-pointer hover:bg-accent/30 transition-colors" onClick={handleFollowUpClick}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Follow-ups</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {followupsDue}
+                    </Badge>
                   </div>
-                  <CardTitle className="text-lg text-foreground">Follow-ups Today</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-foreground">{followupsDue}</span>
-                  <span className="text-sm text-muted-foreground">follow-ups due</span>
-                </div>
-                <Button 
-                  onClick={() => navigate('/leads')}
-                  className="w-full"
-                  size="sm"
-                >
-                  <Clock className="w-4 h-4 mr-2" />
-                  View Follow-ups
-                </Button>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Replies Without Call */}
-            <Card className="bg-card border-border hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-accent rounded-lg">
-                    <MessageSquare className="h-4 w-4 text-foreground" />
+              {/* Replies Without Call */}
+              <Card className="border-none shadow-sm cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => navigate('/leads?status=replied')}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Replied</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {repliedNotBooked}
+                    </Badge>
                   </div>
-                  <CardTitle className="text-lg text-foreground">Replied but Not Booked</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-foreground">{repliedNotBooked}</span>
-                  <span className="text-sm text-muted-foreground">need follow-up</span>
-                </div>
-                <Button 
-                  onClick={() => navigate('/leads')}
-                  className="w-full"
-                  size="sm"
-                >
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  View Replies
-                </Button>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
-            {/* Stats Summary */}
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-3">
+            {/* Stats Summary Column */}
+            <Card className="border-none shadow-sm">
+              <CardHeader className="pb-6">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 bg-accent rounded-lg">
-                    <BarChart3 className="h-4 w-4 text-foreground" />
-                  </div>
-                  <CardTitle className="text-lg text-foreground">Your Stats</CardTitle>
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Today's Performance</span>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-2 pt-2">
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center p-2 bg-accent/50 rounded-lg">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <Users className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Added</span>
+                  <div className="flex items-center justify-between p-2 bg-accent/30 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-3.5 w-3.5 text-blue-600" />
+                      <span className="text-xs font-medium">Leads Added</span>
                     </div>
-                    <span className="text-lg font-bold text-foreground">{todayStats.leadsAdded}</span>
+                    <Badge variant="default" className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-100">
+                      {todayStats.leadsAdded}
+                    </Badge>
                   </div>
-                  <div className="text-center p-2 bg-accent/50 rounded-lg">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <Send className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Emails</span>
+                  <div className="flex items-center justify-between p-2 bg-accent/30 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Send className="h-3.5 w-3.5 text-green-600" />
+                      <span className="text-xs font-medium">Emails Sent</span>
                     </div>
-                    <span className="text-lg font-bold text-foreground">{todayStats.emailsSent}</span>
+                    <Badge variant="default" className="text-xs bg-green-100 text-green-800 hover:bg-green-100">
+                      {todayStats.emailsSent}
+                    </Badge>
                   </div>
-                  <div className="text-center p-2 bg-accent/50 rounded-lg">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <MessageSquare className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Replies</span>
+                  <div className="flex items-center justify-between p-2 bg-accent/30 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-3.5 w-3.5 text-purple-600" />
+                      <span className="text-xs font-medium">Replies Received</span>
                     </div>
-                    <span className="text-lg font-bold text-foreground">{todayStats.replies}</span>
+                    <Badge variant="default" className="text-xs bg-purple-100 text-purple-800 hover:bg-purple-100">
+                      {todayStats.replies}
+                    </Badge>
                   </div>
-                  <div className="text-center p-2 bg-accent/50 rounded-lg">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <Phone className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Calls</span>
+                  <div className="flex items-center justify-between p-2 bg-accent/30 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-3.5 w-3.5 text-orange-600" />
+                      <span className="text-xs font-medium">Calls Booked</span>
                     </div>
-                    <span className="text-lg font-bold text-foreground">{todayStats.callsBooked}</span>
+                    <Badge variant="default" className="text-xs bg-orange-100 text-orange-800 hover:bg-orange-100">
+                      {todayStats.callsBooked}
+                    </Badge>
                   </div>
                 </div>
               </CardContent>
@@ -494,43 +402,23 @@ export function InternDashboard() {
                 placeholder="https://linkedin.com/in/profile"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="assignedIntern" className="text-foreground">Assigned Intern *</Label>
-                <Select
-                  value={formData.assignedIntern}
-                  onValueChange={(value) => setFormData({ ...formData, assignedIntern: value })}
-                >
-                  <SelectTrigger className="bg-input border-border text-foreground">
-                    <SelectValue placeholder="Select intern" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border border-border">
-                    {INTERNS.map((intern) => (
-                      <SelectItem key={intern.id} value={intern.name} className="text-foreground hover:bg-accent">
-                        {intern.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status" className="text-foreground">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value as LeadStatus })}
-                >
-                  <SelectTrigger className="bg-input border-border text-foreground">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border border-border">
-                    {LEAD_STATUSES.map((status) => (
-                      <SelectItem key={status.value} value={status.value} className="text-foreground hover:bg-accent">
-                        {status.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="status" className="text-foreground">Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData({ ...formData, status: value as LeadStatus })}
+              >
+                <SelectTrigger className="bg-input border-border text-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border">
+                  {LEAD_STATUSES.map((status) => (
+                    <SelectItem key={status.value} value={status.value} className="text-foreground hover:bg-accent">
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setAddLeadOpen(false)}>

@@ -111,7 +111,6 @@ export const useTodoStore = create<TodoStore>()(
         set({ isLoading: true, error: null });
         try {
           const updatedTask = await TodoService.toggleTaskComplete(id, completedBy);
-          
           set(state => ({
             tasks: state.tasks.map(task =>
               task.id === id ? updatedTask : task

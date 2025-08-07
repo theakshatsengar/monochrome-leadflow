@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +38,7 @@ import { TodoTask, TodoTemplate } from '@/types/todo';
 import { formatDistanceToNow, format } from 'date-fns';
 
 export function TodoManagement() {
-  const { tasks, addTask, updateTask, deleteTask, templates } = useTodoStore();
+  const { tasks, addTask, updateTask, deleteTask, templates, fetchTasks, fetchTemplates, isLoading, error } = useTodoStore();
   const { user } = useAuthStore();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TodoTask | null>(null);
@@ -53,6 +53,14 @@ export function TodoManagement() {
     dueDate: ''
   });
 
+  // Fetch data on mount
+  useEffect(() => {
+    if (user) {
+      fetchTasks(user.id);
+      fetchTemplates(user.id);
+    }
+  }, [user, fetchTasks, fetchTemplates]);
+
   const resetForm = () => {
     setNewTask({
       title: '',
@@ -64,8 +72,9 @@ export function TodoManagement() {
     setEditingTask(null);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!newTask.title.trim()) return;
+    if (!user) return;
 
     const taskData = {
       title: newTask.title.trim(),
@@ -76,14 +85,18 @@ export function TodoManagement() {
       dueDate: newTask.dueDate ? new Date(newTask.dueDate) : undefined
     };
 
-    if (editingTask) {
-      updateTask(editingTask.id, taskData);
-    } else {
-      addTask(taskData);
-    }
+    try {
+      if (editingTask) {
+        await updateTask(editingTask.id, taskData);
+      } else {
+        await addTask(taskData, user.id);
+      }
 
-    resetForm();
-    setIsAddDialogOpen(false);
+      resetForm();
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      console.error('Error submitting task:', error);
+    }
   };
 
   const handleEdit = (task: TodoTask) => {
@@ -337,9 +350,9 @@ export function TodoManagement() {
                   key={task.id}
                   className={`p-4 border rounded-lg transition-colors ${
                     isOverdue(task) 
-                      ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800' 
+                      ? 'bg-muted dark:bg-muted border-muted-foreground dark:border-muted-foreground' 
                       : task.completed
-                      ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'
+                      ? 'bg-accent dark:bg-accent border-border dark:border-border'
                       : 'bg-card border-border hover:bg-accent/50'
                   }`}
                 >

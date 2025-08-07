@@ -2,19 +2,16 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Lead, LeadStatus } from '@/types/lead';
 import { LeadService } from '@/services/leadService';
-import { supabase } from '@/lib/supabase';
-import { useDailyTasksStore } from './dailyTasksStore';
 
 interface LeadStore {
   leads: Lead[];
   isLoading: boolean;
   error: string | null;
-  addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'followupsSent' | 'hasReplies' | 'assignedIntern'>, userId: string) => Promise<void>;
+  addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'followupsSent' | 'hasReplies'>, userId: string) => Promise<void>;
   updateLeadStatus: (id: string, status: LeadStatus) => Promise<void>;
   deleteLead: (id: string) => Promise<void>;
   updateLead: (id: string, updates: Partial<Lead>) => Promise<void>;
-  fetchLeads: (userId?: string, userRole?: string) => Promise<void>;
-  subscribeToLeads: (userId?: string, userRole?: string) => () => void;
+  fetchLeads: (userId?: string) => Promise<void>;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
@@ -29,50 +26,14 @@ export const useLeadStore = create<LeadStore>()(
       setLoading: (loading: boolean) => set({ isLoading: loading }),
       setError: (error: string | null) => set({ error }),
 
-      fetchLeads: async (userId?: string, userRole?: string) => {
+      fetchLeads: async (userId?: string) => {
         set({ isLoading: true, error: null });
         try {
-          // Admins see all leads, interns only see their own
-          const leads = userRole === 'admin' 
-            ? await LeadService.findAll() // No userId filter for admins
-            : await LeadService.findAll(userId); // Filter by userId for interns
+          const leads = await LeadService.findAll(userId);
           set({ leads, isLoading: false });
         } catch (error) {
           set({ error: error instanceof Error ? error.message : 'Failed to fetch leads', isLoading: false });
         }
-      },
-
-      subscribeToLeads: (userId?: string, userRole?: string) => {
-        // Set up real-time subscription for leads table
-        const channel = supabase
-          .channel('leads-changes')
-          .on(
-            'postgres_changes',
-            {
-              event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-              schema: 'public',
-              table: 'leads',
-              // No filter for admins, filter by user_id for interns
-              ...(userRole !== 'admin' && userId ? { filter: `user_id=eq.${userId}` } : {})
-            },
-            (payload) => {
-              console.log('Real-time lead change detected:', payload);
-              // Refetch leads when changes occur
-              const { fetchLeads } = get();
-              fetchLeads(userId, userRole).catch((error) => {
-                console.error('Failed to refetch leads after real-time update:', error);
-              });
-            }
-          )
-          .subscribe((status) => {
-            console.log('Subscription status:', status);
-          });
-
-        // Return unsubscribe function
-        return () => {
-          console.log('Unsubscribing from leads real-time updates');
-          supabase.removeChannel(channel);
-        };
       },
 
       addLead: async (leadData, userId) => {
@@ -90,12 +51,6 @@ export const useLeadStore = create<LeadStore>()(
             leads: [newLead, ...state.leads],
             isLoading: false 
           }));
-          
-          // Update daily task progress for "Submit leads using the form"
-          const { incrementTaskProgress } = useDailyTasksStore.getState();
-          incrementTaskProgress('submit-leads', userId);
-          
-          // Real-time subscription will handle updating other users' views automatically
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to add lead';
           set({ error: errorMessage, isLoading: false });

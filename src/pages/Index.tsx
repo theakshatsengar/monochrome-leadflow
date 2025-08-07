@@ -2,9 +2,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Users, Target, TrendingUp, CheckCircle, Clock, Mail } from "lucide-react";
 import { useLeadStore } from "@/store/leadStore";
+import { useAuthStore } from "@/store/authStore";
+import { useEffect } from "react";
 
 const Index = () => {
-  const { leads } = useLeadStore();
+  const { leads, fetchLeads, subscribeToLeads } = useLeadStore();
+  const { user } = useAuthStore();
+  
+  // Fetch leads on mount for admin dashboard
+  useEffect(() => {
+    if (user) {
+      fetchLeads(user.id, user.role);
+      
+      // Set up real-time subscription
+      const unsubscribe = subscribeToLeads(user.id, user.role);
+      return unsubscribe;
+    }
+  }, [user, fetchLeads, subscribeToLeads]);
   
   const stats = {
     totalLeads: leads.length,
@@ -73,24 +87,6 @@ const Index = () => {
             </p>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="bg-card border border-border rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Recent Activity</h2>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between py-2 border-b border-border">
-            <span className="text-foreground">New lead added: TechCorp Solutions</span>
-            <span className="text-muted-foreground text-sm">2 hours ago</span>
-          </div>
-          <div className="flex items-center justify-between py-2 border-b border-border">
-            <span className="text-foreground">Status updated: Digital Innovations → Replied</span>
-            <span className="text-muted-foreground text-sm">4 hours ago</span>
-          </div>
-          <div className="flex items-center justify-between py-2 border-b border-border">
-            <span className="text-foreground">Follow-up sent to StartupXYZ</span>
-            <span className="text-muted-foreground text-sm">1 day ago</span>
-          </div>
-        </div>
       </div>
     </div>
   );

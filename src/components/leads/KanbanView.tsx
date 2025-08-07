@@ -48,9 +48,13 @@ function KanbanCard({ lead }: KanbanCardProps) {
     zIndex: isDragging ? 1000 : 'auto',
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this lead?")) {
-      deleteLead(lead.id);
+      try {
+        await deleteLead(lead.id);
+      } catch (error) {
+        console.error('Error deleting lead:', error);
+      }
     }
   };
 
@@ -218,7 +222,7 @@ export function KanbanView({ leads }: KanbanViewProps) {
     setDraggedLead(lead || null);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
     console.log('🎯 DRAG END EVENT:', {
@@ -278,8 +282,12 @@ export function KanbanView({ leads }: KanbanViewProps) {
     // Only update if the status actually changed
     if (currentLead.status !== newStatus) {
       console.log('✅ Updating lead status...');
-      updateLeadStatus(leadId, newStatus as LeadStatus);
-      console.log('✅ Status updated successfully');
+      try {
+        await updateLeadStatus(leadId, newStatus as LeadStatus);
+        console.log('✅ Status updated successfully');
+      } catch (error) {
+        console.error('❌ Error updating lead status:', error);
+      }
     } else {
       console.log('ℹ️ Status unchanged, no update needed');
     }

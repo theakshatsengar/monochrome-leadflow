@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, List, Grid3X3 } from "lucide-react";
 import { useLeadStore } from "@/store/leadStore";
+import { useAuthStore } from "@/store/authStore";
 import { Lead, LeadStatus } from "@/types/lead";
 import { LeadFilters } from "@/components/leads/LeadFilters";
 import { LeadTable } from "@/components/leads/LeadTable";
@@ -12,7 +13,8 @@ import { GalleryView } from "@/components/leads/GalleryView";
 import { AddLeadDialog } from "@/components/leads/AddLeadDialog";
 
 export default function Leads() {
-  const { leads } = useLeadStore();
+  const { leads, fetchLeads, subscribeToLeads, isLoading, error } = useLeadStore();
+  const { user } = useAuthStore();
   const [searchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<"table" | "kanban" | "gallery">("table");
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,10 +22,23 @@ export default function Leads() {
   const [internFilter, setInternFilter] = useState<string | "all">("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
 
+  // Fetch leads on mount and set up real-time subscription
+  useEffect(() => {
+    if (user) {
+      fetchLeads(user.id, user.role);
+      
+      // Set up real-time subscription
+      const unsubscribe = subscribeToLeads(user.id, user.role);
+      
+      // Cleanup subscription on unmount
+      return unsubscribe;
+    }
+  }, [user, fetchLeads, subscribeToLeads]);
+
   // Handle status filter from URL params
   useEffect(() => {
     const statusParam = searchParams.get('status');
-    if (statusParam && (statusParam === 'new' || statusParam === 'contacted' || statusParam === 'qualified' || statusParam === 'proposal' || statusParam === 'won' || statusParam === 'lost')) {
+    if (statusParam && (statusParam === 'new' || statusParam === 'email-sent' || statusParam === 'followup-1' || statusParam === 'followup-2' || statusParam === 'replied' || statusParam === 'booked' || statusParam === 'converted')) {
       setStatusFilter(statusParam as LeadStatus);
     }
   }, [searchParams]);

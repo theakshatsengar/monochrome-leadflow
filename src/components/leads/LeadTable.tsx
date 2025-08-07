@@ -50,14 +50,22 @@ export function LeadTable({ leads }: LeadTableProps) {
   const { updateLeadStatus, deleteLead } = useLeadStore();
   const [editingStatus, setEditingStatus] = useState<string | null>(null);
 
-  const handleStatusChange = (leadId: string, newStatus: LeadStatus) => {
-    updateLeadStatus(leadId, newStatus);
-    setEditingStatus(null);
+  const handleStatusChange = async (leadId: string, newStatus: LeadStatus) => {
+    try {
+      await updateLeadStatus(leadId, newStatus);
+      setEditingStatus(null);
+    } catch (error) {
+      console.error('Error updating lead status:', error);
+    }
   };
 
-  const handleDelete = (leadId: string) => {
+  const handleDelete = async (leadId: string) => {
     if (confirm("Are you sure you want to delete this lead?")) {
-      deleteLead(leadId);
+      try {
+        await deleteLead(leadId);
+      } catch (error) {
+        console.error('Error deleting lead:', error);
+      }
     }
   };
 

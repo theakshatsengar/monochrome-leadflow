@@ -26,7 +26,7 @@ export const MOCK_USERS: (LoginCredentials & { user: User })[] = [
     identifier: 'bhavyaojha28@gmail.com',
     password: 'garlicbread',
     user: {
-      id: '1',
+      id: '00000000-0000-0000-0000-000000000001',
       name: 'Bhavya',
       email: 'bhavyaojha28@gmail.com',
       role: 'intern'
@@ -36,7 +36,7 @@ export const MOCK_USERS: (LoginCredentials & { user: User })[] = [
     identifier: 'bhumikabisht603@gmail.com',
     password: 'pancake',
     user: {
-      id: '2',
+      id: '00000000-0000-0000-0000-000000000002',
       name: 'Bhumika',
       email: 'bhumikabisht603@gmail.com',
       role: 'intern'
@@ -46,7 +46,7 @@ export const MOCK_USERS: (LoginCredentials & { user: User })[] = [
     identifier: 'akshatsengar1002@gmail.com',
     password: 'eggcurry',
     user: {
-      id: '3',
+      id: '00000000-0000-0000-0000-000000000003',
       name: 'Akshat',
       email: 'akshatsengar1002@gmail.com',
       role: 'admin'
@@ -57,7 +57,7 @@ export const MOCK_USERS: (LoginCredentials & { user: User })[] = [
     identifier: 'Bhavya',
     password: 'garlicbread',
     user: {
-      id: '1',
+      id: '00000000-0000-0000-0000-000000000001',
       name: 'Bhavya',
       email: 'bhavyaojha28@gmail.com',
       role: 'intern'
@@ -67,7 +67,7 @@ export const MOCK_USERS: (LoginCredentials & { user: User })[] = [
     identifier: 'Bhumika',
     password: 'pancake',
     user: {
-      id: '2',
+      id: '00000000-0000-0000-0000-000000000002',
       name: 'Bhumika',
       email: 'bhumikabisht603@gmail.com',
       role: 'intern'
@@ -77,7 +77,7 @@ export const MOCK_USERS: (LoginCredentials & { user: User })[] = [
     identifier: 'Akshat',
     password: 'eggcurry',
     user: {
-      id: '3',
+      id: '00000000-0000-0000-0000-000000000003',
       name: 'Akshat',
       email: 'akshatsengar1002@gmail.com',
       role: 'admin'

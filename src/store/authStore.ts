@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User, AuthState, LoginCredentials, MOCK_USERS } from '@/types/auth';
+import { UserService } from '@/services/userService';
 
 interface AuthStore extends AuthState {
   login: (credentials: LoginCredentials) => Promise<boolean>;
   logout: () => void;
   setLoading: (loading: boolean) => void;
+  initializeUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthStore>()(
@@ -18,25 +20,50 @@ export const useAuthStore = create<AuthStore>()(
       login: async (credentials: LoginCredentials): Promise<boolean> => {
         set({ isLoading: true });
         
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Find user in mock data
-        const foundUser = MOCK_USERS.find(
-          u => u.identifier === credentials.identifier && u.password === credentials.password
-        );
-        
-        if (foundUser) {
-          set({
-            user: foundUser.user,
-            isAuthenticated: true,
-            isLoading: false
-          });
-          return true;
-        } else {
+        try {
+          // For demo purposes, authenticate with mock users first
+          const mockUser = MOCK_USERS.find(
+            u => u.identifier === credentials.identifier && u.password === credentials.password
+          );
+          
+          if (mockUser) {
+            // Use mock user directly for demo
+            set({
+              user: mockUser.user,
+              isAuthenticated: true,
+              isLoading: false
+            });
+            
+            // Try to ensure user exists in Supabase for data operations (non-blocking)
+            try {
+              await UserService.findByEmailOrName(credentials.identifier).then(async (existingUser) => {
+                if (!existingUser) {
+                  await UserService.create(mockUser.user);
+                }
+              });
+            } catch (error) {
+              // Silently fail - user can still use the app with mock auth
+              console.warn('Could not sync user to Supabase:', error);
+            }
+            
+            return true;
+          } else {
+            set({ isLoading: false });
+            return false;
+          }
+        } catch (error) {
+          console.error('Login error:', error);
           set({ isLoading: false });
           return false;
         }
+      },
+
+      initializeUser: (user: User) => {
+        set({
+          user,
+          isAuthenticated: true,
+          isLoading: false
+        });
       },
 
       logout: () => {
