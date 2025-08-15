@@ -83,4 +83,26 @@ export const MOCK_USERS: (LoginCredentials & { user: User })[] = [
       role: 'admin'
     }
   }
+  ,
+  // New user Utkarsh (can login by name or email)
+  {
+    identifier: 'hello.utkarshjha@gmail.com',
+    password: 'chickentikka',
+    user: {
+      id: '00000000-0000-0000-0000-000000000004',
+      name: 'Utkarsh',
+      email: 'hello.utkarshjha@gmail.com',
+      role: 'manager'
+    }
+  },
+  {
+    identifier: 'Utkarsh',
+    password: 'chickentikka',
+    user: {
+      id: '00000000-0000-0000-0000-000000000004',
+      name: 'Utkarsh',
+      email: 'hello.utkarshjha@gmail.com',
+      role: 'manager'
+    }
+  }
 ];

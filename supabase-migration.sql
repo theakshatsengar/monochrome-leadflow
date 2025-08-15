@@ -134,6 +134,10 @@ INSERT INTO users (id, name, email, role) VALUES
     ('00000000-0000-0000-0000-000000000002', 'Bhumika', 'bhumikabisht603@gmail.com', 'intern'),
     ('00000000-0000-0000-0000-000000000003', 'Akshat', 'akshatsengar1002@gmail.com', 'admin');
 
+-- Added mock user Utkarsh for demo login
+INSERT INTO users (id, name, email, role) VALUES
+    ('00000000-0000-0000-0000-000000000004', 'Utkarsh', 'hello.utkarshjha@gmail.com', 'manager');
+
 -- Insert sample templates
 INSERT INTO todo_templates (title, description, priority, is_default, user_id) VALUES 
     ('Find 10–15 new leads', 'Research and identify potential prospects using LinkedIn, company directories, etc.', 'high', true, '00000000-0000-0000-0000-000000000003'),
