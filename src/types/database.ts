@@ -85,50 +85,6 @@ export interface Database {
           user_id?: string
         }
       }
-      daily_tasks: {
-        Row: {
-          id: string
-          task_id: string
-          title: string
-          description?: string
-          completed: boolean
-          target_count?: number
-          current_count: number
-          icon: string
-          user_id: string
-          date: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          task_id: string
-          title: string
-          description?: string
-          completed?: boolean
-          target_count?: number
-          current_count?: number
-          icon: string
-          user_id: string
-          date?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          task_id?: string
-          title?: string
-          description?: string
-          completed?: boolean
-          target_count?: number
-          current_count?: number
-          icon?: string
-          user_id?: string
-          date?: string
-          created_at?: string
-          updated_at?: string
-        }
-      }
       todo_tasks: {
         Row: {
           id: string

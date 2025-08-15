@@ -7,8 +7,6 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { useAuthStore } from "@/store/authStore";
-import { useEffect } from "react";
-import { migrateDailyTasksFromLocalStorage } from "@/services/dailyTaskMigration";
 import Index from "./pages/Index";
 import Leads from "./pages/Leads";
 import Analytics from "./pages/Analytics";
@@ -23,16 +21,6 @@ const queryClient = new QueryClient();
 
 function AppRoutes() {
   const { isAuthenticated, user } = useAuthStore();
-
-  // Run migration when user is authenticated
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      migrateDailyTasksFromLocalStorage().catch(error => {
-        console.error('Daily tasks migration failed:', error);
-        // Migration failure shouldn't break the app, just log it
-      });
-    }
-  }, [isAuthenticated, user]);
 
   return (
     <Routes>

@@ -1,8 +1,5 @@
 import { create } from 'zustand';
-import { dailyTaskService } from '@/services/dailyTaskService';
-import type { Database } from '@/types/database';
-
-type DailyTaskRow = Database['public']['Tables']['daily_tasks']['Row'];
+import { persist } from 'zustand/middleware';
 
 export interface DailyTask {
   id: string;
@@ -12,163 +9,165 @@ export interface DailyTask {
   targetCount?: number;
   currentCount?: number;
   icon: string;
-  userId?: string;
-  taskId: string; // The predefined task ID
+  userId?: string; // Add userId to track ownership
 }
-
-// Convert database row to store format
-const convertFromDbTask = (dbTask: DailyTaskRow): DailyTask => ({
-  id: dbTask.id,
-  title: dbTask.title,
-  description: dbTask.description || '',
-  completed: dbTask.completed,
-  targetCount: dbTask.target_count || undefined,
-  currentCount: dbTask.current_count || 0,
-  icon: dbTask.icon,
-  userId: dbTask.user_id,
-  taskId: dbTask.task_id,
-});
 
 interface DailyTasksStore {
   tasks: DailyTask[];
-  loading: boolean;
-  error: string | null;
+  lastResetDate: string;
   currentUserId: string | null;
-  initializeDailyTasks: (userId: string) => Promise<void>;
-  toggleTask: (taskId: string, userId: string) => Promise<void>;
-  updateTaskProgress: (taskId: string, currentCount: number, userId: string) => Promise<void>;
-  incrementTaskProgress: (taskId: string, userId: string) => Promise<void>;
-  resetTasksIfNewDay: (userId: string) => Promise<void>;
+  initializeDailyTasks: (userId: string) => void;
+  toggleTask: (taskId: string, userId: string) => void;
+  updateTaskProgress: (taskId: string, currentCount: number, userId: string) => void;
+  incrementTaskProgress: (taskId: string, userId: string) => void;
+  resetTasksIfNewDay: (userId: string) => void;
   getTaskProgress: (userId: string) => { completed: number; total: number };
   setCurrentUser: (userId: string) => void;
-  refreshTasks: (userId: string) => Promise<void>;
-  clearError: () => void;
 }
 
-export const useDailyTasksStore = create<DailyTasksStore>()((set, get) => ({
-  tasks: [],
-  loading: false,
-  error: null,
-  currentUserId: null,
-
-  setCurrentUser: (userId: string) => {
-    set({ currentUserId: userId });
+const MANDATORY_DAILY_TASKS: Omit<DailyTask, 'completed' | 'currentCount'>[] = [
+  {
+    id: 'find-leads',
+    title: 'Find 10–15 new leads',
+    description: 'Research and identify potential prospects',
+    targetCount: 12,
+    icon: 'search',
   },
-
-  clearError: () => {
-    set({ error: null });
+  {
+    id: 'submit-leads',
+    title: 'Submit leads using the form',
+    description: 'Add discovered leads to the system',
+    targetCount: 5,
+    icon: 'plus',
   },
-
-  refreshTasks: async (userId: string) => {
-    try {
-      set({ loading: true, error: null });
-      const dbTasks = await dailyTaskService.getDailyTasks(userId);
-      const tasks = dbTasks.map(convertFromDbTask);
-      set({ tasks, loading: false });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to refresh tasks';
-      set({ error: errorMessage, loading: false });
-      console.error('Error refreshing tasks:', error);
-    }
+  {
+    id: 'send-emails',
+    title: 'Send cold emails to new leads',
+    description: 'Reach out to new prospects with initial emails',
+    targetCount: 8,
+    icon: 'mail',
   },
-
-  initializeDailyTasks: async (userId: string) => {
-    try {
-      set({ loading: true, error: null });
-      const dbTasks = await dailyTaskService.initializeDailyTasks(userId);
-      const tasks = dbTasks.map(convertFromDbTask);
-      set({ 
-        tasks, 
-        currentUserId: userId, 
-        loading: false 
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to initialize daily tasks';
-      set({ error: errorMessage, loading: false });
-      console.error('Error initializing daily tasks:', error);
-    }
+  {
+    id: 'follow-up',
+    title: 'Follow up on pending leads',
+    description: 'Send follow-up emails to existing leads',
+    targetCount: 10,
+    icon: 'repeat',
   },
-
-  resetTasksIfNewDay: async (userId: string) => {
-    // For database implementation, we just refresh the tasks
-    // The service will handle creating new tasks if needed
-    await get().refreshTasks(userId);
+  {
+    id: 'update-statuses',
+    title: 'Update statuses',
+    description: 'Update lead statuses based on responses',
+    targetCount: 5,
+    icon: 'edit',
   },
+];
 
-  toggleTask: async (taskId: string, userId: string) => {
-    try {
-      set({ loading: true, error: null });
-      
-      // Find the task by id (database ID, not taskId)
-      const task = get().tasks.find(t => t.id === taskId);
-      if (!task) {
-        throw new Error('Task not found');
-      }
+export const useDailyTasksStore = create<DailyTasksStore>()(
+  persist(
+    (set, get) => ({
+      tasks: [],
+      lastResetDate: '',
+      currentUserId: null,
 
-      const updatedDbTask = await dailyTaskService.toggleTask(taskId, userId);
-      if (updatedDbTask) {
-        const updatedTask = convertFromDbTask(updatedDbTask);
+      setCurrentUser: (userId: string) => {
+        set({ currentUserId: userId });
+      },
+
+      initializeDailyTasks: (userId: string) => {
+        const today = new Date().toDateString();
+        const { lastResetDate, tasks } = get();
+        
+        // Check if we need to reset for this user
+        const userTasks = tasks.filter(task => task.userId === userId);
+        
+        if (lastResetDate !== today || userTasks.length === 0) {
+          // Reset tasks for new day or initialize for new user
+          const initialTasks: DailyTask[] = MANDATORY_DAILY_TASKS.map(task => ({
+            ...task,
+            completed: false,
+            currentCount: 0,
+            userId: userId,
+          }));
+          
+          // Remove old tasks for this user and add new ones
+          const otherUserTasks = tasks.filter(task => task.userId !== userId);
+          
+          set({
+            tasks: [...otherUserTasks, ...initialTasks],
+            lastResetDate: today,
+            currentUserId: userId,
+          });
+        }
+      },
+
+      resetTasksIfNewDay: (userId: string) => {
+        const today = new Date().toDateString();
+        const { lastResetDate } = get();
+        
+        if (lastResetDate !== today) {
+          get().initializeDailyTasks(userId);
+        }
+      },
+
+      toggleTask: (taskId: string, userId: string) => {
         set(state => ({
-          tasks: state.tasks.map(t =>
-            t.id === taskId ? updatedTask : t
+          tasks: state.tasks.map(task =>
+            task.id === taskId && task.userId === userId
+              ? { ...task, completed: !task.completed }
+              : task
           ),
-          loading: false
         }));
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to toggle task';
-      set({ error: errorMessage, loading: false });
-      console.error('Error toggling task:', error);
-    }
-  },
+      },
 
-  updateTaskProgress: async (taskId: string, currentCount: number, userId: string) => {
-    try {
-      set({ loading: true, error: null });
-      
-      const updatedDbTask = await dailyTaskService.updateTaskProgress(taskId, currentCount, userId);
-      if (updatedDbTask) {
-        const updatedTask = convertFromDbTask(updatedDbTask);
+      updateTaskProgress: (taskId: string, currentCount: number, userId: string) => {
         set(state => ({
-          tasks: state.tasks.map(t =>
-            t.id === taskId ? updatedTask : t
-          ),
-          loading: false
+          tasks: state.tasks.map(task => {
+            if (task.id === taskId && task.userId === userId) {
+              const updated = { ...task, currentCount };
+              // Auto-complete if target is reached
+              if (task.targetCount && currentCount >= task.targetCount) {
+                updated.completed = true;
+              }
+              return updated;
+            }
+            return task;
+          }),
         }));
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update task progress';
-      set({ error: errorMessage, loading: false });
-      console.error('Error updating task progress:', error);
-    }
-  },
+      },
 
-  incrementTaskProgress: async (taskId: string, userId: string) => {
-    try {
-      set({ loading: true, error: null });
-      
-      const updatedDbTask = await dailyTaskService.incrementTaskProgress(taskId, userId);
-      if (updatedDbTask) {
-        const updatedTask = convertFromDbTask(updatedDbTask);
+      incrementTaskProgress: (taskId: string, userId: string) => {
         set(state => ({
-          tasks: state.tasks.map(t =>
-            t.id === taskId ? updatedTask : t
-          ),
-          loading: false
+          tasks: state.tasks.map(task => {
+            if (task.id === taskId && task.userId === userId) {
+              const newCount = (task.currentCount || 0) + 1;
+              const updated = { ...task, currentCount: newCount };
+              // Auto-complete if target is reached
+              if (task.targetCount && newCount >= task.targetCount) {
+                updated.completed = true;
+              }
+              return updated;
+            }
+            return task;
+          }),
         }));
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to increment task progress';
-      set({ error: errorMessage, loading: false });
-      console.error('Error incrementing task progress:', error);
-    }
-  },
+      },
 
-  getTaskProgress: (userId: string) => {
-    const { tasks } = get();
-    const userTasks = tasks.filter(task => task.userId === userId);
-    const completed = userTasks.filter(task => task.completed).length;
-    const total = userTasks.length;
-    return { completed, total };
-  },
-}));
+      getTaskProgress: (userId: string) => {
+        const { tasks } = get();
+        const userTasks = tasks.filter(task => task.userId === userId);
+        const completed = userTasks.filter(task => task.completed).length;
+        const total = userTasks.length;
+        return { completed, total };
+      },
+    }),
+    {
+      name: 'daily-tasks-storage',
+      partialize: (state) => ({
+        tasks: state.tasks,
+        lastResetDate: state.lastResetDate,
+        currentUserId: state.currentUserId,
+      }),
+    }
+  )
+);
