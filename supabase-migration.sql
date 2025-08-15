@@ -136,7 +136,7 @@ INSERT INTO users (id, name, email, role) VALUES
 
 -- Added mock user Utkarsh for demo login
 INSERT INTO users (id, name, email, role) VALUES
-    ('00000000-0000-0000-0000-000000000004', 'Utkarsh', 'hello.utkarshjha@gmail.com', 'manager');
+    ('00000000-0000-0000-0000-000000000004', 'Utkarsh', 'hello.utkarshjha@gmail.com', 'admin');
 
 -- Insert sample templates
 INSERT INTO todo_templates (title, description, priority, is_default, user_id) VALUES 

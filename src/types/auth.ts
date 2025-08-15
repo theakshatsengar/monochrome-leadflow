@@ -92,7 +92,7 @@ export const MOCK_USERS: (LoginCredentials & { user: User })[] = [
       id: '00000000-0000-0000-0000-000000000004',
       name: 'Utkarsh',
       email: 'hello.utkarshjha@gmail.com',
-      role: 'manager'
+      role: 'admin'
     }
   },
   {
@@ -102,7 +102,7 @@ export const MOCK_USERS: (LoginCredentials & { user: User })[] = [
       id: '00000000-0000-0000-0000-000000000004',
       name: 'Utkarsh',
       email: 'hello.utkarshjha@gmail.com',
-      role: 'manager'
+      role: 'admin'
     }
   }
 ];
