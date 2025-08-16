@@ -111,7 +111,7 @@ export function AppSidebar() {
               <FlaskConical className="h-4 w-4 text-primary-foreground" />
             </div>
             {!collapsed && (
-              <span className="font-semibold text-foreground">LeadFlow</span>
+              <span className="font-semibold text-foreground">lessboring</span>
             )}
           </div>
         </div>

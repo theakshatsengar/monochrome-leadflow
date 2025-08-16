@@ -42,7 +42,7 @@ export function Login() {
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Building2 className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">LeadFlow</h1>
+            <h1 className="text-2xl font-bold text-foreground">lessboring</h1>
           </div>
           <p className="text-muted-foreground">Sign in to your account</p>
         </div>
@@ -115,7 +115,7 @@ export function Login() {
 
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground">
-          © 2025 LeadFlow. All rights reserved.
+          © 2025 lessboring. All rights reserved.
         </div>
       </div>
     </div>
