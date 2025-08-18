@@ -47,7 +47,7 @@ export interface Database {
           contact_email: string
           linkedin_profile?: string
           assigned_intern: string
-          status: 'new' | 'email-sent' | 'followup-1' | 'followup-2' | 'replied' | 'booked' | 'converted'
+          status: 'new' | 'email-sent' | 'followup-1' | 'followup-2' | 'followup-3' | 'replied' | 'booked' | 'converted' | 'closed'
           created_at: string
           updated_at: string
           followups_sent: number
@@ -62,7 +62,7 @@ export interface Database {
           contact_email: string
           linkedin_profile?: string
           assigned_intern: string
-          status?: 'new' | 'email-sent' | 'followup-1' | 'followup-2' | 'replied' | 'booked' | 'converted'
+          status?: 'new' | 'email-sent' | 'followup-1' | 'followup-2' | 'followup-3' | 'replied' | 'booked' | 'converted' | 'closed'
           created_at?: string
           updated_at?: string
           followups_sent?: number
@@ -77,7 +77,7 @@ export interface Database {
           contact_email?: string
           linkedin_profile?: string
           assigned_intern?: string
-          status?: 'new' | 'email-sent' | 'followup-1' | 'followup-2' | 'replied' | 'booked' | 'converted'
+          status?: 'new' | 'email-sent' | 'followup-1' | 'followup-2' | 'followup-3' | 'replied' | 'booked' | 'converted' | 'closed'
           created_at?: string
           updated_at?: string
           followups_sent?: number
@@ -167,7 +167,7 @@ export interface Database {
     }
     Enums: {
       user_role: 'admin' | 'manager' | 'intern'
-      lead_status: 'new' | 'email-sent' | 'followup-1' | 'followup-2' | 'replied' | 'booked' | 'converted'
+  lead_status: 'new' | 'email-sent' | 'followup-1' | 'followup-2' | 'followup-3' | 'replied' | 'booked' | 'converted' | 'closed'
       task_priority: 'low' | 'medium' | 'high'
     }
     CompositeTypes: {

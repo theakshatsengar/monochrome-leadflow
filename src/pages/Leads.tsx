@@ -11,6 +11,7 @@ import { LeadTable } from "@/components/leads/LeadTable";
 import { KanbanView } from "@/components/leads/KanbanView";
 import { GalleryView } from "@/components/leads/GalleryView";
 import { AddLeadDialog } from "@/components/leads/AddLeadDialog";
+import { LeadService } from '@/services/leadService';
 
 export default function Leads() {
   const { leads, fetchLeads, subscribeToLeads, isLoading, error } = useLeadStore();
@@ -21,6 +22,7 @@ export default function Leads() {
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
   const [internFilter, setInternFilter] = useState<string | "all">("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
+  const [quickTab, setQuickTab] = useState<'all' | 'needs-email' | 'followup-due' | 'overdue' | 'closed' >('all')
 
   // Fetch leads on mount and set up real-time subscription
   useEffect(() => {
@@ -34,6 +36,32 @@ export default function Leads() {
       return unsubscribe;
     }
   }, [user, fetchLeads, subscribeToLeads]);
+
+  // Run auto-advance when the leads page mounts and then periodically (hourly)
+  useEffect(() => {
+    let intervalId: number | undefined;
+    const runAutoAdvance = async () => {
+      try {
+        const res = await LeadService.autoAdvanceFollowups(user?.id);
+        if (res && res.advanced && res.advanced.length > 0) {
+          // Refresh leads after changes
+          fetchLeads(user.id, user.role);
+        }
+      } catch (e) {
+        console.error('Auto-advance failed', e);
+      }
+    }
+
+    if (user) {
+      runAutoAdvance();
+      // Run hourly
+      intervalId = setInterval(runAutoAdvance, 1000 * 60 * 60);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    }
+  }, [user, fetchLeads]);
 
   // Handle status filter from URL params
   useEffect(() => {
@@ -73,8 +101,37 @@ export default function Leads() {
       filtered = filtered.filter((lead) => lead.updatedAt >= cutoffDate);
     }
 
+    // Quick tabs
+    switch (quickTab) {
+      case 'needs-email':
+        filtered = filtered.filter(l => l.status === 'new');
+        break;
+      case 'followup-due':
+        filtered = filtered.filter(l => l.status === 'email-sent' || l.status === 'followup-1' || l.status === 'followup-2' || l.status === 'followup-3');
+        break;
+      case 'overdue': {
+        // Overdue: candidate followups where updatedAt is past expected window
+        const now = new Date();
+        filtered = filtered.filter(l => {
+          if (l.hasReplies) return false;
+          const daysAgo = Math.floor((now.getTime() - l.updatedAt.getTime()) / (1000 * 60 * 60 * 24));
+          if (l.status === 'email-sent' && daysAgo > 3) return true;
+          if (l.status === 'followup-1' && daysAgo > 4) return true;
+          if (l.status === 'followup-2' && daysAgo > 7) return true;
+          return false;
+        });
+        break;
+      }
+      case 'closed':
+        filtered = filtered.filter(l => l.status === 'converted' || l.status === 'closed');
+        break;
+      case 'all':
+      default:
+        break;
+    }
+
     return filtered;
-  }, [leads, searchQuery, statusFilter, internFilter, dateFilter]);
+  }, [leads, searchQuery, statusFilter, internFilter, dateFilter, quickTab]);
 
   return (
     <div className="flex flex-col h-full max-w-full overflow-hidden">
@@ -87,18 +144,33 @@ export default function Leads() {
               Manage and track your outbound leads
             </p>
           </div>
-          <AddLeadDialog />
+          <div className="flex items-center gap-2">
+            <AddLeadDialog />
+            {import.meta.env.DEV && (
+              <button
+                className="px-3 py-1 rounded bg-muted text-muted-foreground text-sm"
+                onClick={async () => {
+                  try {
+                    const all = await LeadService.findAll();
+                    console.log('Debug fetchAllLeads:', all.length, all);
+                    alert(`Debug: found ${all.length} lead(s) (check console for details)`);
+                  } catch (err) {
+                    console.error('Debug fetchAllLeads error', err);
+                    alert('Debug fetch failed — check console');
+                  }
+                }}
+              >
+                Debug: Fetch All Leads
+              </button>
+            )}
+          </div>
         </div>
 
         <LeadFilters
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-          internFilter={internFilter}
-          onInternFilterChange={setInternFilter}
-          dateFilter={dateFilter}
-          onDateFilterChange={setDateFilter}
+          quickTab={quickTab}
+          onQuickTabChange={(tab) => setQuickTab(tab)}
         />
 
         <div className="flex items-center justify-between">

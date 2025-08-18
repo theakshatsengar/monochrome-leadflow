@@ -3,9 +3,13 @@ export type LeadStatus =
   | 'email-sent'
   | 'followup-1'
   | 'followup-2'
+  | 'followup-3'
   | 'replied'
   | 'booked'
-  | 'converted';
+  | 'converted'
+  | 'closed'
+
+export type AllLeadStatus = LeadStatus;
 
 export interface Lead {
   id: string;
@@ -15,7 +19,7 @@ export interface Lead {
   contactEmail: string;
   linkedinProfile?: string;
   assignedIntern: string;
-  status: LeadStatus;
+  status: AllLeadStatus;
   createdAt: Date;
   updatedAt: Date;
   followupsSent: number;
@@ -27,6 +31,7 @@ export const LEAD_STATUSES: { value: LeadStatus; label: string }[] = [
   { value: 'email-sent', label: 'Email Sent' },
   { value: 'followup-1', label: 'Follow-up 1' },
   { value: 'followup-2', label: 'Follow-up 2' },
+  { value: 'followup-3', label: 'Follow-up 3' },
   { value: 'replied', label: 'Replied' },
   { value: 'booked', label: 'Booked' },
   { value: 'converted', label: 'Converted' },

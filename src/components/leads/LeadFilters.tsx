@@ -1,45 +1,24 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Search, Filter, X } from "lucide-react";
-import { LEAD_STATUSES, INTERNS, LeadStatus } from "@/types/lead";
+import { Search, X } from "lucide-react";
 
 interface LeadFiltersProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  statusFilter: LeadStatus | "all";
-  onStatusFilterChange: (status: LeadStatus | "all") => void;
-  internFilter: string | "all";
-  onInternFilterChange: (intern: string | "all") => void;
-  dateFilter: string;
-  onDateFilterChange: (period: string) => void;
+  quickTab: 'all' | 'needs-email' | 'followup-due' | 'overdue' | 'closed';
+  onQuickTabChange: (tab: 'all' | 'needs-email' | 'followup-due' | 'overdue' | 'closed') => void;
 }
 
 export function LeadFilters({
   searchQuery,
   onSearchChange,
-  statusFilter,
-  onStatusFilterChange,
-  internFilter,
-  onInternFilterChange,
-  dateFilter,
-  onDateFilterChange,
+  quickTab,
+  onQuickTabChange,
 }: LeadFiltersProps) {
-  const hasActiveFilters = statusFilter !== "all" || internFilter !== "all" || dateFilter !== "all";
+  const hasSearch = !!searchQuery;
 
-  const clearFilters = () => {
-    onStatusFilterChange("all");
-    onInternFilterChange("all");
-    onDateFilterChange("all");
-    onSearchChange("");
-  };
+  const clearSearch = () => onSearchChange("");
 
   return (
     <div className="space-y-4 bg-card border border-border rounded-lg p-4">
@@ -55,55 +34,20 @@ export function LeadFilters({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-            <SelectTrigger className="w-[140px] bg-background border-border text-foreground">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent className="bg-background border border-border">
-              <SelectItem value="all" className="text-foreground hover:bg-muted">All Statuses</SelectItem>
-              {LEAD_STATUSES.map((status) => (
-                <SelectItem key={status.value} value={status.value} className="text-foreground hover:bg-muted">
-                  {status.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Button variant={quickTab === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => onQuickTabChange('all')}>All Leads</Button>
+          <Button variant={quickTab === 'needs-email' ? 'default' : 'ghost'} size="sm" onClick={() => onQuickTabChange('needs-email')}>Needs Email Sent</Button>
+          <Button variant={quickTab === 'followup-due' ? 'default' : 'ghost'} size="sm" onClick={() => onQuickTabChange('followup-due')}>Follow-up Due</Button>
+          <Button variant={quickTab === 'overdue' ? 'default' : 'ghost'} size="sm" onClick={() => onQuickTabChange('overdue')}>Overdue Tasks</Button>
+          <Button variant={quickTab === 'closed' ? 'default' : 'ghost'} size="sm" onClick={() => onQuickTabChange('closed')}>Converted / Closed</Button>
 
-          <Select value={internFilter} onValueChange={onInternFilterChange}>
-            <SelectTrigger className="w-[140px] bg-background border-border text-foreground">
-              <SelectValue placeholder="Intern" />
-            </SelectTrigger>
-            <SelectContent className="bg-background border border-border">
-              <SelectItem value="all" className="text-foreground hover:bg-muted">All Interns</SelectItem>
-              {INTERNS.map((intern) => (
-                <SelectItem key={intern} value={intern} className="text-foreground hover:bg-muted">
-                  {intern}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={dateFilter} onValueChange={onDateFilterChange}>
-            <SelectTrigger className="w-[140px] bg-background border-border text-foreground">
-              <SelectValue placeholder="Date" />
-            </SelectTrigger>
-            <SelectContent className="bg-background border border-border">
-              <SelectItem value="all" className="text-foreground hover:bg-muted">All Time</SelectItem>
-              <SelectItem value="7" className="text-foreground hover:bg-muted">Last 7 Days</SelectItem>
-              <SelectItem value="30" className="text-foreground hover:bg-muted">Last 30 Days</SelectItem>
-              <SelectItem value="90" className="text-foreground hover:bg-muted">Last 90 Days</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {hasActiveFilters && (
+          {hasSearch && (
             <Button
               variant="outline"
               size="sm"
-              onClick={clearFilters}
+              onClick={clearSearch}
               className="border-border text-foreground hover:bg-muted"
             >
-              <X className="h-4 w-4 mr-1" />
-              Clear
+              <X className="h-4 w-4" />
             </Button>
           )}
         </div>
