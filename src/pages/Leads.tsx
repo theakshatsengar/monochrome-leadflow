@@ -22,7 +22,7 @@ export default function Leads() {
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
   const [internFilter, setInternFilter] = useState<string | "all">("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
-  const [quickTab, setQuickTab] = useState<'all' | 'needs-email' | 'followup-due' | 'overdue' | 'closed' >('all')
+  const [quickTab, setQuickTab] = useState<'all' | 'needs-email' | 'email-sent' | 'followup-sent' | 'followup-due' | 'reply-received' | 'closed' >('all')
 
   // Fetch leads on mount and set up real-time subscription
   useEffect(() => {
@@ -106,22 +106,31 @@ export default function Leads() {
       case 'needs-email':
         filtered = filtered.filter(l => l.status === 'new');
         break;
-      case 'followup-due':
-        filtered = filtered.filter(l => l.status === 'email-sent' || l.status === 'followup-1' || l.status === 'followup-2' || l.status === 'followup-3');
+      case 'email-sent':
+        filtered = filtered.filter(l => l.status === 'email-sent');
         break;
-      case 'overdue': {
-        // Overdue: candidate followups where updatedAt is past expected window
+      case 'followup-sent':
+        filtered = filtered.filter(l => l.status === 'followup-1' || l.status === 'followup-2' || l.status === 'followup-3');
+        break;
+  case 'followup-due': {
+        // Only show leads that are due for the next follow-up based on rules:
+        // email-sent -> due after >=3 days
+        // followup-1 -> due after >=4 days
+        // followup-2 -> due after >=7 days
         const now = new Date();
         filtered = filtered.filter(l => {
           if (l.hasReplies) return false;
           const daysAgo = Math.floor((now.getTime() - l.updatedAt.getTime()) / (1000 * 60 * 60 * 24));
-          if (l.status === 'email-sent' && daysAgo > 3) return true;
-          if (l.status === 'followup-1' && daysAgo > 4) return true;
-          if (l.status === 'followup-2' && daysAgo > 7) return true;
+          if (l.status === 'email-sent' && daysAgo >= 3) return true;
+          if (l.status === 'followup-1' && daysAgo >= 4) return true;
+          if (l.status === 'followup-2' && daysAgo >= 7) return true;
           return false;
         });
         break;
       }
+        case 'reply-received':
+          filtered = filtered.filter(l => l.hasReplies || l.status === 'replied');
+          break;
       case 'closed':
         filtered = filtered.filter(l => l.status === 'converted' || l.status === 'closed');
         break;
@@ -146,23 +155,6 @@ export default function Leads() {
           </div>
           <div className="flex items-center gap-2">
             <AddLeadDialog />
-            {import.meta.env.DEV && (
-              <button
-                className="px-3 py-1 rounded bg-muted text-muted-foreground text-sm"
-                onClick={async () => {
-                  try {
-                    const all = await LeadService.findAll();
-                    console.log('Debug fetchAllLeads:', all.length, all);
-                    alert(`Debug: found ${all.length} lead(s) (check console for details)`);
-                  } catch (err) {
-                    console.error('Debug fetchAllLeads error', err);
-                    alert('Debug fetch failed — check console');
-                  }
-                }}
-              >
-                Debug: Fetch All Leads
-              </button>
-            )}
           </div>
         </div>
 

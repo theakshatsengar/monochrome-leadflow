@@ -6,8 +6,8 @@ import { Search, X } from "lucide-react";
 interface LeadFiltersProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  quickTab: 'all' | 'needs-email' | 'followup-due' | 'overdue' | 'closed';
-  onQuickTabChange: (tab: 'all' | 'needs-email' | 'followup-due' | 'overdue' | 'closed') => void;
+  quickTab: 'all' | 'needs-email' | 'email-sent' | 'followup-sent' | 'followup-due' | 'reply-received' | 'closed';
+  onQuickTabChange: (tab: 'all' | 'needs-email' | 'email-sent' | 'followup-sent' | 'followup-due' | 'reply-received' | 'closed') => void;
 }
 
 export function LeadFilters({
@@ -36,8 +36,10 @@ export function LeadFilters({
         <div className="flex items-center gap-2 flex-wrap">
           <Button variant={quickTab === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => onQuickTabChange('all')}>All Leads</Button>
           <Button variant={quickTab === 'needs-email' ? 'default' : 'ghost'} size="sm" onClick={() => onQuickTabChange('needs-email')}>Needs Email Sent</Button>
+          <Button variant={quickTab === 'email-sent' ? 'default' : 'ghost'} size="sm" onClick={() => onQuickTabChange('email-sent')}>Email Sent</Button>
+          <Button variant={quickTab === 'followup-sent' ? 'default' : 'ghost'} size="sm" onClick={() => onQuickTabChange('followup-sent')}>Follow-up Sent</Button>
           <Button variant={quickTab === 'followup-due' ? 'default' : 'ghost'} size="sm" onClick={() => onQuickTabChange('followup-due')}>Follow-up Due</Button>
-          <Button variant={quickTab === 'overdue' ? 'default' : 'ghost'} size="sm" onClick={() => onQuickTabChange('overdue')}>Overdue Tasks</Button>
+          <Button variant={quickTab === 'reply-received' ? 'default' : 'ghost'} size="sm" onClick={() => onQuickTabChange('reply-received')}>Reply Received</Button>
           <Button variant={quickTab === 'closed' ? 'default' : 'ghost'} size="sm" onClick={() => onQuickTabChange('closed')}>Converted / Closed</Button>
 
           {hasSearch && (
