@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Leads from "./pages/Leads";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
+import EmailTemplates from "./pages/EmailTemplates";
 import { Login } from "./pages/Login";
 import { Unauthorized } from "./pages/Unauthorized";
 import { InternDashboard } from "./pages/InternDashboard";
@@ -51,6 +52,14 @@ function AppRoutes() {
         <ProtectedRoute>
           <DashboardLayout>
             <Leads />
+          </DashboardLayout>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/email-templates" element={
+        <ProtectedRoute>
+          <DashboardLayout>
+            <EmailTemplates />
           </DashboardLayout>
         </ProtectedRoute>
       } />

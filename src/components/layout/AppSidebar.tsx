@@ -4,6 +4,7 @@ import {
   Users, 
   BarChart3, 
   Settings,
+  Mail,
   ChevronDown,
   ChevronRight,
   CheckSquare,
@@ -42,7 +43,8 @@ const getNavigationItems = (userRole: string | undefined) => {
   if (userRole === 'intern') {
     return [
       { title: "Dashboard", url: "/", icon: UserCheck, roles: ['intern'] },
-      { title: "Leads", url: "/leads", icon: Users, roles: ['intern'] },
+  { title: "Leads", url: "/leads", icon: Users, roles: ['intern'] },
+  { title: "Email Templates", url: "/email-templates", icon: Mail, roles: ['intern'] },
     ];
   }
 
@@ -60,7 +62,10 @@ const getNavigationItems = (userRole: string | undefined) => {
     { title: "Settings", url: "/settings", icon: Settings, roles: ['admin'] },
   ];
 
-  const allItems = [...baseItems, ...roleSpecificItems];
+  // Add Email Templates for all roles (will be filtered by getNavigationItems)
+  const emailTemplateItem = { title: "Email Templates", url: "/email-templates", icon: Mail, roles: ['admin', 'manager', 'intern'] };
+
+  const allItems = [...baseItems, ...roleSpecificItems, emailTemplateItem];
   
   if (!userRole) return baseItems;
   

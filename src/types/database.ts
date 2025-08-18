@@ -158,6 +158,38 @@ export interface Database {
           user_id?: string
         }
       }
+      email_templates: {
+        Row: {
+          id: string
+          name: string
+          subject: string
+          body: string
+          created_at: string
+          updated_at: string
+          user_id: string
+          is_public: boolean
+        }
+        Insert: {
+          id?: string
+          name: string
+          subject: string
+          body: string
+          created_at?: string
+          updated_at?: string
+          user_id: string
+          is_public?: boolean
+        }
+        Update: {
+          id?: string
+          name?: string
+          subject?: string
+          body?: string
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+          is_public?: boolean
+        }
+      }
     }
     Views: {
       [_ in never]: never

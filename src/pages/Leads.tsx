@@ -69,6 +69,10 @@ export default function Leads() {
     if (statusParam && (statusParam === 'new' || statusParam === 'email-sent' || statusParam === 'followup-1' || statusParam === 'followup-2' || statusParam === 'replied' || statusParam === 'booked' || statusParam === 'converted')) {
       setStatusFilter(statusParam as LeadStatus);
     }
+    const quickParam = searchParams.get('quick');
+    if (quickParam && ['needs-email','email-sent','followup-sent','followup-due','reply-received','closed','all'].includes(quickParam)) {
+      setQuickTab(quickParam as 'all' | 'needs-email' | 'email-sent' | 'followup-sent' | 'followup-due' | 'reply-received' | 'closed')
+    }
   }, [searchParams]);
 
   const filteredLeads = useMemo(() => {

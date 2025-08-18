@@ -122,7 +122,7 @@ export function InternDashboard() {
     // Track email sending activity
     const { incrementTaskProgress } = useDailyTasksStore.getState();
     incrementTaskProgress('send-emails', user.id);
-    navigate('/leads?status=new');
+  navigate('/leads?quick=needs-email');
   };
 
   // Track follow-up activity
@@ -130,6 +130,7 @@ export function InternDashboard() {
     if (!user) return;
     const { incrementTaskProgress } = useDailyTasksStore.getState();
     incrementTaskProgress('follow-up', user.id);
+  navigate('/leads?quick=followup-due');
   };
 
   // Handle form submission for add lead
@@ -198,48 +199,24 @@ export function InternDashboard() {
 
         {/* Right Column */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Quick Actions Section */}
-          <Card className="border-none shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-3">
-              <div className="grid md:grid-cols-3 gap-3">
-                <Button 
-                  onClick={() => setAddLeadOpen(true)}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start h-14 border-2 hover:bg-accent/50"
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  Add Lead
-                </Button>
-                <Button 
-                  onClick={handleSendEmailsClick}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start h-14 border-2 hover:bg-accent/50"
-                >
-                  <Mail className="w-4 h-4 mr-2" />
-                  Send Emails
-                </Button>
-                <Button 
-                  onClick={() => navigate('/leads')}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start h-14 border-2 hover:bg-accent/50"
-                >
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  View Leads
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Add Lead CTA removed from standalone position; placed inside the action cards below for consistent widths */}
 
           {/* Action Cards Grid */}
           <div className="grid md:grid-cols-2 gap-4">
             {/* Action Cards Column */}
             <div className="space-y-3">
+              {/* Add Lead - placed here so it shares the same width/column as other action cards */}
+              <Card className="border-none shadow-sm cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => setAddLeadOpen(true)}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Add Lead</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Leads Needing Email */}
               <Card className="border-none shadow-sm cursor-pointer hover:bg-accent/30 transition-colors" onClick={handleSendEmailsClick}>
                 <CardContent className="p-4">
@@ -271,7 +248,7 @@ export function InternDashboard() {
               </Card>
 
               {/* Replies Without Call */}
-              <Card className="border-none shadow-sm cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => navigate('/leads?status=replied')}>
+              <Card className="border-none shadow-sm cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => navigate('/leads?quick=reply-received')}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
